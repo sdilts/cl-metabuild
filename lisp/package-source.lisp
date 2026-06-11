@@ -17,6 +17,11 @@ source will place the dependencies in"))
   (:documentation "Apply the given CLI options to this package source")
   (:method (source opts)))
 
+(defgeneric package-source-available-p (source)
+  (:documentation "Check if the given package source is usable")
+  (:method (source opts )
+	t))
+
 (define-condition package-source-error ()
   ((reason :initarg :reason :reader package-source-error-reason)))
 
@@ -41,14 +46,14 @@ source will place the dependencies in"))
 		(valid-source-keys nil))
 	(loop :for k :being :the :hash-key
 			:using (hash-value s) :of *package-sources*
-		  do (push (get-cli-options s) source-opts)
+		  do (when (package-source-available-p s)
+			   (push (get-cli-options s) source-opts))
 			 (push k valid-source-keys))
 	(cons
 	 (adopt:make-option
 	  'package-source-type
 	  :parameter "SOURCE"
 	  :long "package-source"
-	  :initial-value "ocicl"
 	  :short #\s
 	  :help (format nil "Method by which to fetch ASDF systems not found locally.
 Valid options are~{ ~A~}" valid-source-keys)
@@ -58,42 +63,28 @@ Valid options are~{ ~A~}" valid-source-keys)
 	 source-opts)))
 
 (defun apply-package-source-from-opts (proj opts)
-  (let* ((source-name (gethash 'package-source-type opts))
-		 (pkg-source (gethash source-name *package-sources*)))
-	(unless pkg-source
-	  (error 'package-source-error
-			 :reason (format nil "No package source named ~S avaiable"
-							 source-name)))
-	;; TODO: Detect if the chosen source won't work and maybe
-	;; fallback to another option:
-	(apply-cli-options pkg-source opts)
-	(with-accessors ((proj-source project-config-package-source)
-					 (proj-registry project-config-source-registry))
-		proj
-	  (setf proj-source pkg-source
-			proj-registry (append
-						   (dependency-source-registry pkg-source proj)
-						   proj-registry)))))
+  (let ((source-name (gethash 'package-source-type opts)))
+	(unless source-name
+	  (setf source-name "ocicl"))
+	(let ((pkg-source (gethash source-name *package-sources*)))
+	  (unless pkg-source
+		(error 'package-source-error
+			   :reason (format nil "No package source named ~S avaiable"
+							   source-name)))
+	  ;; TODO: Maybe fallback to another option if the option isn't available?
+	  (unless (package-source-available-p pkg-source)
+		(error 'package-source-error
+			   :reason "System missing required dependencies for package source ~S."
+			   source-name))
+	  (apply-cli-options pkg-source opts)
+	  (with-accessors ((proj-source project-config-package-source)
+					   (proj-registry project-config-source-registry))
+		  proj
+		(setf proj-source pkg-source
+			  proj-registry (append
+							 (dependency-source-registry pkg-source proj)
+							   proj-registry))))))
 
-
-(defun %ensure-dependencies (source proj dependencies visited)
-  (let ((missing nil))
-	(dolist (d dependencies)
-	  (setf (gethash d visited) t)
-	  (let ((sys (asdf:find-system d)))
-		(if sys
-			(dolist (sub (asdf:system-depends-on sys))
-			  (when (not (or (gethash sub visited) (asdf:find-system sub)))
-				(push sub missing)))
-			(push d missing))))
-	(when missing
-	  (install-dependencies source proj missing)
-	  (%ensure-dependencies source proj missing visited))))
-
-(defun ensure-dependencies (proj dependencies)
-  (let ((visited (make-hash-table)))
-	(%ensure-dependencies (project-config-package-source proj)
-						  proj dependencies visited)))
 
 (defmacro with-env-values (value-spec &body body)
   (let ((vars (mapcar (lambda (x)
