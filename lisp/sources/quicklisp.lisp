@@ -1,10 +1,7 @@
 (in-package #:static-build)
 
-(defclass quicklisp-source ()
+(define-pkg-source (quicklisp-source "quicklisp") ()
   ((home :type (or null pathname) :initform nil :accessor quicklisp-source-home)))
-
-(setf (gethash "quicklisp" *package-sources*)
-	  (make-instance 'quicklisp-source))
 
 (defun %get-systems (tree table)
   (cond ((atom tree)

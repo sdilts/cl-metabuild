@@ -1,6 +1,6 @@
 (in-package #:static-build)
 
-(defclass ocicl-source ()
+(define-pkg-source (ocicl-source "ocicl") ()
   ())
 
 (defmethod install-dependencies ((source ocicl-source) project dependencies)
@@ -19,6 +19,3 @@
 
 (defmethod dependency-source-registry ((source ocicl-source) project)
   (list `(:tree ,(merge-pathnames "ocicl/" (project-config-base-path project)))))
-
-(setf (gethash "ocicl" *package-sources*)
-	  (make-instance 'ocicl-source))

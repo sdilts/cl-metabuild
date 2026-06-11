@@ -25,6 +25,17 @@ source will place the dependencies in"))
 
 (defvar *package-sources* (make-hash-table :test 'equal))
 
+(defmacro define-pkg-source ((name designator)
+							 direct-superclasses
+							 direct-slots
+							 &body options)
+  `(progn
+	 (defclass ,name ,direct-superclasses
+	   ,direct-slots
+	   ,@options)
+	 (setf (gethash ,designator *package-sources*)
+		   (make-instance (quote ,name)))))
+
 (defun get-package-source-opts ()
   (let ((source-opts nil)
 		(valid-source-keys nil))
