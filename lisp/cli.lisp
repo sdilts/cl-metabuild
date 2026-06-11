@@ -2,7 +2,7 @@
 
 (defun %build-feature-group (proj)
   (let ((feature-options nil))
-	(dolist (spec (exec-project-features proj))
+	(dolist (spec (project-config-features proj))
 	  (declare (type feature-spec spec))
 	  (with-accessors ((name feature-spec-feature)
 					   (default feature-spec-enabled))
@@ -29,32 +29,48 @@
 					  :title "Enable Features"
 					  :options feature-options)))
 
-(defun %build-cmd-line-parser (proj)
+(defun build-cmd-line-parser (proj)
   (let ((help-option (adopt:make-option
 					  'help
 					  :long "help"
 					  :short #\h
 					  :help "Display help and exit"
 					  :reduce (constantly t)))
+		(build-dir-option (adopt:make-option
+					   'build-dir
+					   :parameter "PATH"
+					   :long "build-directory"
+					   :short #\o
+					   :help "Build directory location."
+					   :reduce (lambda (prev new)
+								 (declare (ignore prev))
+								 new)))
 		(feature-group (%build-feature-group proj)))
 	(adopt:make-interface
-	 :name (format nil "Static Build" (exec-project-system proj))
+	 :name (format nil "Static Builder")
 	 :summary (format nil "Configure build options for ~S"
-					  (exec-project-system proj))
+					  (project-config-system proj))
 	 :usage "[OPTIONS]"
 	 :help "Specify build options ..."
-	 :contents (list help-option
-					 feature-group))))
+	 :contents (append (list help-option
+							 build-dir-option
+							 feature-group)
+					   (get-package-source-opts)))))
 
-(defun process-command-line-args (proj)
-  (let ((parser (%build-cmd-line-parser proj)))
-	(multiple-value-bind (pos opts)
-		(adopt:parse-options parser)
-	  (when (gethash 'help opts)
-		(adopt:print-help-and-exit parser))
-	  (dolist (f (exec-project-features proj))
-		(declare (type feature-spec f))
-		(multiple-value-bind (arg present)
-			(gethash (feature-spec-feature f) opts)
-		  (when present
-			(setf (feature-spec-enabled f) arg)))))))
+(defun apply-command-line-opts (parser opts proj)
+  (declare (type hash-table opts)
+		   (type project-config proj))
+  (when (gethash 'help opts)
+	(adopt:print-help-and-exit parser))
+  (let ((p (gethash 'build-dir opts)))
+	(when p
+	  (setf (project-config-build-dir proj)
+			(%construct-relative-directory (uiop:getcwd)
+										   (uiop:parse-native-namestring p)))))
+  (apply-package-source-from-opts proj opts)
+  (dolist (f (project-config-features proj))
+	(declare (type feature-spec f))
+	(multiple-value-bind (arg present)
+		(gethash (feature-spec-feature f) opts)
+	  (when present
+		(setf (feature-spec-enabled f) arg)))))
