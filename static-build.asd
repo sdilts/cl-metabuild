@@ -8,12 +8,13 @@
 			   #:adopt
 			   #:local-time)
   :components ((:file "package")
+			   (:file "util" :depends-on ("package"))
 			   (:file "configure" :depends-on ("package"))
 			   (:file "cli" :depends-on ("configure" "package-source"))
-			   (:file "generate" :depends-on ("cli" "configure"))
+			   (:file "generate" :depends-on ("cli" "package-source" "configure"))
 			   (:file "package-source" :depends-on ("package" "configure"))
 			   (:module sources
-				:depends-on ("package-source")
+				:depends-on ("package-source" "util")
 				:components ((:file "ocicl")
 							 (:file "qlot")
 							 #+quicklisp
