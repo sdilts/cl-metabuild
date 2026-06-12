@@ -68,7 +68,7 @@ Valid options are~{ ~A~}" valid-source-keys)
 (defun apply-package-source-from-opts (proj opts)
   (let ((source-name (gethash 'package-source-type opts)))
 	(unless source-name
-	  (setf source-name "ocicl"))
+	  (setf source-name "quicklisp"))
 	(let ((pkg-source (gethash source-name *package-sources*)))
 	  (unless pkg-source
 		(error 'package-source-error

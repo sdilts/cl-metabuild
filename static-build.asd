@@ -6,6 +6,7 @@
   :pathname "lisp/"
   :depends-on (#:uiop
 			   #:adopt
+			   #:quicklisp
 			   #:local-time)
   :components ((:file "package")
 			   (:file "util" :depends-on ("package"))
@@ -15,7 +16,4 @@
 			   (:file "package-source" :depends-on ("package" "configure"))
 			   (:module sources
 				:depends-on ("package-source" "util")
-				:components ((:file "ocicl")
-							 (:file "qlot")
-							 #+quicklisp
-							 (:file "quicklisp")))))
+				:components ((:file "quicklisp")))))
