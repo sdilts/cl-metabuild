@@ -15,5 +15,6 @@
 			   (:module sources
 				:depends-on ("package-source")
 				:components ((:file "ocicl")
+							 (:file "qlot")
 							 #+quicklisp
 							 (:file "quicklisp")))))

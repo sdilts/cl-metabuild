@@ -184,13 +184,13 @@ Ensure there is a ~A character at the end of directory names."
 							   pathname
 							   (uiop:directory-separator-for-host))))))
 
-(defun add-system-directories (project &rest directories)
+(defun add-vendor-directories (project &rest directories)
   (declare (type project-config project))
   (dolist (d directories)
 	(pushnew (list :directory (%construct-relative-directory project d))
 			 (project-config-source-registry project))))
 
-(defun add-system-trees (project &rest directories)
+(defun add-vendor-trees (project &rest directories)
   (declare (type project-config project))
   (dolist (d directories)
 	(pushnew (list :tree (%construct-relative-directory project d))

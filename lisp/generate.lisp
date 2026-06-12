@@ -84,15 +84,75 @@ features and ASDF environment"
 				stream)
 		(format stream "~&")))))
 
+(defmacro with-missing-dependency-fetcher ((project source-registry-param)
+										   &body body)
+  (let ((handle-missing-dependency (gensym "handle-missing-dependency"))
+		(registry-param (gensym "registry-param")))
+	`(let ((,registry-param ,source-registry-param))
+	   (flet ((,handle-missing-dependency (c)
+				(let ((missing-req (asdf/find-component:missing-requires c)))
+				  (format *error-output* "~&Missing dependency: ~S~%"
+						  missing-req)
+				  (finish-output *error-output*)
+				  (install-dependencies
+				   (project-config-package-source ,project)
+				   ,project
+				   (list missing-req))
+				  ;; ASDF won't find the new package unless the source
+				  ;; registry is reset:
+				  (asdf:initialize-source-registry ,registry-param)
+				  (invoke-restart 'asdf:retry))))
+		 ;; We could just add something to
+		 ;; asdf:*system-definition-search-functions*
+		 ;; instead of this, but I'm less
+		 ;; confident of the results. Maybe it would be faster?
+		 (handler-bind ((asdf:missing-dependency
+						  (function ,handle-missing-dependency)))
+		   ,@body)))))
+
+(defun %find-sys (project source-registry-param system-name)
+  (with-missing-dependency-fetcher (project source-registry-param)
+	(asdf:find-system system-name nil)))
+
+(defun %find-missing-dependencies (project dependencies source-registry-param)
+  (let ((pkg-src (project-config-package-source project))
+		(missing nil)
+		(vendored nil))
+	(declare (optimize (debug 3)))
+	(dolist (d dependencies)
+	  (let ((sys (%find-sys project source-registry-param d)))
+		(if sys
+			(unless (system-from-source-p
+					 pkg-src sys)
+			  (push sys vendored))
+			(push d missing))))
+	(values missing vendored)))
+
 (defun download-dependencies (project source-registry-param)
   (declare (type project-config project))
+  ;; We need to clear this project's dependencies so they
+  ;; aren't counted as present:
+  (let ((cur-sys (asdf:find-system "static-build")))
+	(dolist (d (asdf:system-depends-on cur-sys))
+	  (asdf:clear-system d)))
   (format *error-output* "~%Checking project dependencies...~%")
   (asdf:initialize-source-registry source-registry-param)
-  (install-dependencies (project-config-package-source project)
-						project (asdf:system-depends-on (project-config-system project)))
-  ;; (ensure-dependencies project
-  ;; 					   (asdf:system-depends-on (project-config-system project)))
-  )
+  (let* ((dependencies (asdf:system-depends-on (project-config-system project))))
+	(multiple-value-bind (missing vendored)
+		(%find-missing-dependencies project dependencies source-registry-param)
+	  (when vendored
+		(format *error-output* "Checking dependencies of vendored systems:~{ ~A~}~%"
+				vendored)
+		(dolist (v vendored)
+		  (let ((v-deps (asdf:system-depends-on v)))
+			(dolist (d v-deps)
+			  (unless (%find-sys project source-registry-param d)
+				(push d missing))))))
+	  (when missing
+		(format *error-output* "Missing systems:~{ ~A~}~%"
+				missing)
+		(install-dependencies (project-config-package-source project)
+							  project missing)))))
 
 (defun finish-configure (project)
   (let ((parser (build-cmd-line-parser project)))
@@ -108,4 +168,4 @@ features and ASDF environment"
 	(ensure-directories-exist (project-config-build-dir project))
 	(let ((init-file-path (generate-init-env project source-registry-param)))
 	  (generate-build-exec-script project init-file-path))
-	(format *error-output* "~%Done! You can build the project.~%")))
+	(format *error-output* "~%Done! You can now build the project.~%")))

@@ -4,7 +4,7 @@
   (:documentation "Install the given dependencies using the given
 package source."))
 
-(defgeneric dependency-source-registry (source project)
+(defgeneric dependency-source-registry (source)
   (:documentation "Return a list of source registry specs that this package
 source will place the dependencies in"))
 
@@ -13,14 +13,17 @@ source will place the dependencies in"))
   (:method (source)
 	(list)))
 
-(defgeneric apply-cli-options (source opts)
+(defgeneric init-with-cli-options (source project opts)
   (:documentation "Apply the given CLI options to this package source")
-  (:method (source opts)))
+  (:method (source project opts)))
 
 (defgeneric package-source-available-p (source)
   (:documentation "Check if the given package source is usable")
-  (:method (source opts )
+  (:method (source)
 	t))
+
+(defgeneric system-from-source-p (source system)
+  (:documentation "Return T if the given system is from this package source"))
 
 (define-condition package-source-error ()
   ((reason :initarg :reason :reader package-source-error-reason)))
@@ -76,15 +79,14 @@ Valid options are~{ ~A~}" valid-source-keys)
 		(error 'package-source-error
 			   :reason "System missing required dependencies for package source ~S."
 			   source-name))
-	  (apply-cli-options pkg-source opts)
+	  (init-with-cli-options pkg-source proj opts)
 	  (with-accessors ((proj-source project-config-package-source)
 					   (proj-registry project-config-source-registry))
 		  proj
 		(setf proj-source pkg-source
 			  proj-registry (append
-							 (dependency-source-registry pkg-source proj)
+							 (dependency-source-registry pkg-source)
 							   proj-registry))))))
-
 
 (defmacro with-env-values (value-spec &body body)
   (let ((vars (mapcar (lambda (x)
@@ -101,3 +103,21 @@ Valid options are~{ ~A~}" valid-source-keys)
 				(if val val "")))
 		 (setf ,@(loop for v in vars
 					   append (list `(uiop:getenv ,(second v)) `(,val-or-blank ,(car v)))))))))
+
+(defun program-availabe-p (program-name)
+  (let (
+		#+unix
+		(find-command (list "which" program-name))
+		#+windows
+		(find-command (list "where" "ocicl")))
+	(multiple-value-bind (output err-output code)
+		(uiop:run-program find-command :ignore-error-status t)
+	  (declare (ignore output err-output))
+	  (zerop code))))
+
+(defun pathname-under-p (under top)
+  (if (and under top)
+	  (not (eq :absolute (car (pathname-directory
+							   (enough-namestring (truename under)
+												  (truename top))))))
+	  nil))
