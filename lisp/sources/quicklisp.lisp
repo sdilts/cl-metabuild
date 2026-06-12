@@ -19,7 +19,7 @@
 	(dolist (d dependencies)
 	  (setf (gethash (ql-dist:find-system "adopt") required) t)
 	  (%get-systems (ql-dist:dependency-tree d) required))
-	(format t "Required systems:~{ ~S~}~%"
+	(format t "~&Required systems:~%~1T~{ ~S~:_~}~%"
 			(loop for k being the hash-keys of required
 				  collect k))
 	(finish-output)

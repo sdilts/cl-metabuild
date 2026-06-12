@@ -84,14 +84,21 @@ features and ASDF environment"
 				stream)
 		(format stream "~&")))))
 
-(defmacro with-missing-dependency-fetcher ((project source-registry-param)
+(defmacro with-missing-dependency-fetcher ((project source-registry-param
+											&key purpose)
 										   &body body)
   (let ((handle-missing-dependency (gensym "handle-missing-dependency"))
-		(registry-param (gensym "registry-param")))
+		(registry-param (gensym "registry-param"))
+		(log-str (if purpose
+					 (format nil "~~&Missing dependency for ~A: ~~S~~%"
+							 purpose)
+					 "~&Missing dependency: ~S~%")))
 	`(let ((,registry-param ,source-registry-param))
 	   (flet ((,handle-missing-dependency (c)
 				(let ((missing-req (asdf/find-component:missing-requires c)))
-				  (format *error-output* "~&Missing dependency: ~S~%"
+				  (finish-output *error-output*)
+				  (finish-output)
+				  (format *error-output* ,log-str
 						  missing-req)
 				  (finish-output *error-output*)
 				  (install-dependencies
@@ -111,7 +118,8 @@ features and ASDF environment"
 		   ,@body)))))
 
 (defun %find-sys (project source-registry-param system-name)
-  (with-missing-dependency-fetcher (project source-registry-param)
+  (with-missing-dependency-fetcher (project source-registry-param
+											:purpose "defsystem")
 	(asdf:find-system system-name nil)))
 
 (defun %find-missing-dependencies (project dependencies source-registry-param)
@@ -141,7 +149,7 @@ features and ASDF environment"
 	(multiple-value-bind (missing vendored)
 		(%find-missing-dependencies project dependencies source-registry-param)
 	  (when vendored
-		(format *error-output* "Checking dependencies of vendored systems:~{ ~A~}~%"
+		(format *error-output* "Checking dependencies of vendored systems:~%~1T~{ ~A~}~%"
 				vendored)
 		(dolist (v vendored)
 		  (let ((v-deps (asdf:system-depends-on v)))
@@ -149,10 +157,12 @@ features and ASDF environment"
 			  (unless (%find-sys project source-registry-param d)
 				(push d missing))))))
 	  (when missing
-		(format *error-output* "Missing systems:~{ ~A~}~%"
+		(format *error-output* "Missing systems:~%~1T~{ ~A~}~%"
 				missing)
 		(install-dependencies (project-config-package-source project)
-							  project missing)))))
+							  project missing))))
+  (format *error-output* "~&Dependency check done!~%")
+  (finish-output *error-output*))
 
 (defun finish-configure (project)
   (let ((parser (build-cmd-line-parser project)))
