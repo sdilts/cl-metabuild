@@ -1,9 +1,8 @@
 (in-package #:static-build)
 
-(define-pkg-source (quicklisp-source "quicklisp") ()
-  ((home :type (or null pathname) :initform nil :accessor quicklisp-source-home)
-   (dist-dir :type (or null pathname) :initform nil
-			  :accessor quicklisp-source-dist-dir)))
+(define-pkg-source (quicklisp-source "quicklisp")
+  (home nil :type (or null pathname))
+  (dist-dir nil :type (or null pathname)))
 
 (defun %get-systems (tree table)
   (cond ((atom tree)

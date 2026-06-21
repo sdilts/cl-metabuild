@@ -33,16 +33,21 @@ source will place the dependencies in"))
 
 (defvar *package-sources* (make-hash-table :test 'equal))
 
+(defstruct package-source)
+
 (defmacro define-pkg-source ((name designator)
-							 direct-superclasses
-							 direct-slots
-							 &body options)
-  `(progn
-	 (defclass ,name ,direct-superclasses
-	   ,direct-slots
-	   ,@options)
-	 (setf (gethash ,designator *package-sources*)
-		   (make-instance (quote ,name)))))
+							 &body direct-slots)
+  (let ((ds (gensym "designator"))
+		(constructor-name (intern (string-upcase
+								   (concatenate 'string
+												"make-"
+												(symbol-name name))))))
+	`(eval-when (:compile-toplevel :load-toplevel :execute)
+	   (let ((,ds ,designator))
+		 (defstruct (,name (:include package-source))
+		   ,@direct-slots)
+		 (setf (gethash ,ds *package-sources*)
+			   (,constructor-name :name ,ds))))))
 
 (defun get-package-source-opts ()
   (let ((source-opts nil)
@@ -79,6 +84,7 @@ Valid options are~{ ~A~}" valid-source-keys)
 		(error 'package-source-error
 			   :reason "System missing required dependencies for package source ~S."
 			   source-name))
+	  (setf pkg-source (copy-structure pkg-source))
 	  (init-with-cli-options pkg-source proj opts)
 	  (with-accessors ((proj-source project-config-package-source)
 					   (proj-registry project-config-source-registry))
@@ -164,6 +170,7 @@ Valid options are~{ ~A~}" valid-source-keys)
 		(format *error-output* "Missing systems:~%~1T~{ ~A~}~%"
 				missing)
 		(install-dependencies (project-config-package-source project)
-							  project missing))))
-  (format *error-output* "~&Dependency check done!~%")
-  (finish-output *error-output*))
+							  project missing))
+	  (format *error-output* "~&Dependency check done!~%")
+	  (finish-output *error-output*)
+	  vendored)))

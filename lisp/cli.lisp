@@ -54,7 +54,8 @@
 	 :help "Specify build options ..."
 	 :contents (append (list help-option
 							 build-dir-option
-							 feature-group)
+							 feature-group
+							 state-group)
 					   (get-package-source-opts)))))
 
 (defun apply-command-line-opts (parser opts proj)
