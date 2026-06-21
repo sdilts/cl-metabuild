@@ -48,7 +48,6 @@
 				  output-translations)
 			stream)))
 
-
 (defun generate-init-env (proj source-registry)
   "Generate the init-build-env.lisp file that initializes the
 features and ASDF environment"
@@ -88,18 +87,49 @@ features and ASDF environment"
 				stream)
 		(format stream "~&")))))
 
-(defun finish-configure (project)
-  (let ((parser (build-cmd-line-parser project)))
-	(multiple-value-bind (pos opts)
-		(adopt:parse-options parser)
-	  (declare (ignore pos))
-	  (apply-command-line-opts parser opts project)))
-  (let ((source-registry-param (%build-source-registry-param project)))
-	(download-dependencies project source-registry-param)
+(defun %internal-dir (proj)
+  (declare (type project-config proj))
+  (append
+   (pathname-directory (project-config-build-dir
+						proj))
+   (list "internal")))
+
+(defun %write-state-file (proj build-state)
+  (let* ((internal-dir (%internal-dir proj))
+		(path (make-pathname
+			   :directory internal-dir
+			   :name "state"
+			   :type "sexp")))
+	(ensure-directories-exist (make-pathname :directory internal-dir))
+	(with-open-file (stream path :direction :output :if-exists :supersede)
+	  (pprint build-state stream))))
+
+(defun emit-all-files (project)
+  (declare (type project-config project))
+  (let* ((source-registry-param (%build-source-registry-param project))
+		 (vendored (download-dependencies project source-registry-param)))
 	(print-summary project)
 	(format *error-output* "~%Generating output files...")
 	(finish-output *error-output*)
 	(ensure-directories-exist (project-config-build-dir project))
 	(let ((init-file-path (generate-init-env project source-registry-param)))
 	  (generate-build-exec-script project init-file-path))
+	(let ((build-state (extract-build-state project vendored)))
+	  (%write-state-file project build-state))
 	(format *error-output* "~%Done! You can now build the project.~%")))
+
+(defun finish-configure (project)
+  (let ((last-state nil))
+	(let ((parser (build-cmd-line-parser project)))
+	  (multiple-value-bind (pos opts)
+		  (adopt:parse-options parser)
+		(declare (ignore pos))
+		(setf last-state (apply-command-line-opts parser opts project))))
+	(when (and last-state
+			   (needs-whole-rebuild project last-state)
+			   (uiop:directory-exists-p (project-asdf-cache project)))
+	  ;; Something changed so that we can't use the old compilation
+	  ;; results. Remove them before continuing:
+	  (format *error-output* "~%Build settings changed, removing old compilation results...")
+	  (uiop:delete-directory-tree (project-asdf-cache project) :validate t))
+	(emit-all-files project)))

@@ -33,6 +33,16 @@
 	(pathname-under-p (asdf:system-source-directory system)
 					  dist-path)))
 
+(defmethod package-source-equals ((a quicklisp-source) (b quicklisp-source))
+  (with-accessors ((a-dist quicklisp-source-dist-dir)
+				   (a-home quicklisp-source-home))
+	  a
+	(with-accessors ((b-dist quicklisp-source-dist-dir)
+					 (b-home quicklisp-source-home))
+		b
+	  (and (equalp a-dist b-dist)
+		   (equalp a-home b-home)))))
+
 (defmethod get-cli-options ((source quicklisp-source))
   (let ((home-option (adopt:make-option
 					  'quicklisp-home

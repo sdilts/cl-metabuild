@@ -45,6 +45,15 @@
 					   :reduce (lambda (prev new)
 								 (declare (ignore prev))
 								 new)))
+		(state-group (adopt:make-option
+					  'reuse-state
+					  :parameter "PATH"
+					  :long "state"
+					  ;; :hidden t
+					  :help "Reuse state from previous build"
+					  :reduce (lambda (prev new)
+							   (declare (ignore prev))
+							   new)))
 		(feature-group (%build-feature-group proj)))
 	(adopt:make-interface
 	 :name (format nil "Static Builder")
@@ -74,4 +83,7 @@
 	(multiple-value-bind (arg present)
 		(gethash (feature-spec-feature f) opts)
 	  (when present
-		(setf (feature-spec-enabled f) arg)))))
+		(setf (feature-spec-enabled f) arg))))
+  (let ((reuse-state (gethash 'reuse-state opts)))
+	(when reuse-state
+		(read-build-state reuse-state))))

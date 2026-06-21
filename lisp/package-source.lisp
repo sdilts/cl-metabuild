@@ -25,6 +25,9 @@ source will place the dependencies in"))
 (defgeneric system-from-source-p (source system)
   (:documentation "Return T if the given system is from this package source"))
 
+(defgeneric package-source-equals (a b)
+  (:documentation "Checks to see if two package sources are the same"))
+
 (define-condition package-source-error ()
   ((reason :initarg :reason :reader package-source-error-reason)))
 
@@ -33,7 +36,8 @@ source will place the dependencies in"))
 
 (defvar *package-sources* (make-hash-table :test 'equal))
 
-(defstruct package-source)
+(defstruct package-source
+  (name nil :type string))
 
 (defmacro define-pkg-source ((name designator)
 							 &body direct-slots)

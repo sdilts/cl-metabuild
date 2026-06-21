@@ -1,10 +1,9 @@
 (in-package #:static-build)
 
-(defstruct (feature-spec
-			(:constructor make-feature-spec (feature default)))
+(defstruct feature-spec
   (feature nil :type symbol :read-only t)
   (default nil :type boolean :read-only t)
-  (enabled default :type boolean))
+  (enabled nil :type boolean))
 
 (defstruct project-config
   (system nil :type asdf:system :read-only t)
@@ -165,8 +164,9 @@ Args:
   (dolist (f feature-specs)
 	(let ((spec (if (listp f)
 					(destructuring-bind (f-symb &key default) f
-					  (make-feature-spec f-symb default))
-					(make-feature-spec f nil))))
+					  (make-feature-spec :feature f-symb :default default
+										 :enabled default))
+					(make-feature-spec :feature f :default nil))))
 	  (pushnew spec (project-config-features project)))))
 
 (defmacro add-features (project &body feature-specs)
