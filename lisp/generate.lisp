@@ -10,12 +10,15 @@
   (format stream "~%;;~%;; Creation Date: ~A" (local-time:format-timestring nil (local-time:now))))
 
 (defun %insert-declarations (proj stream)
+  (declare (type project-config proj)
+		   (type stream stream))
   (when (project-config-optimization proj)
 	(format stream  "~%")
 	(pprint `(declaim ,(project-config-optimization proj))
 			stream)))
 
 (defun %generate-features-insert (proj stream)
+  (declare (type project-config proj))
   (let ((forms (loop for f in (project-config-features proj)
 					 append (when (feature-spec-enabled f)
 							  (list `(cl:pushnew ,(feature-spec-feature f)
@@ -29,6 +32,7 @@
 				   :ignore-inherited-configuration))
 
 (defun %generate-asdf-config (proj source-registry-param stream)
+  (declare (type project-config proj))
   (let ((output-translations
 		  `(quote (:output-translations
 				   :inherit-configuration
