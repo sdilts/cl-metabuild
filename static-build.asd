@@ -7,8 +7,14 @@
   :depends-on (#:uiop
 			   #:adopt
 			   #:quicklisp
+			   #:trivial-gray-streams
 			   #:local-time)
-  :components ((:file "package")
+  :components ((:module ninja
+				:serial t
+				:components ((:file "packages")
+							 (:file "line-wrapping-stream")
+							 (:file "ninja")))
+			   (:file "package")
 			   (:file "util" :depends-on ("package"))
 			   (:file "configure" :depends-on ("package"))
 			   (:file "cli"

@@ -85,7 +85,8 @@ features and ASDF environment"
 									  exec-sys
 									  sys)))
 				stream)
-		(format stream "~&")))))
+		(format stream "~&")))
+	path))
 
 (defun %internal-dir (proj)
   (declare (type project-config proj))
@@ -104,6 +105,46 @@ features and ASDF environment"
 	(with-open-file (stream path :direction :output :if-exists :supersede)
 	  (pprint build-state stream))))
 
+(defun %write-ninja-file (proj init-file build-script)
+  (declare (optimize (debug 3)))
+  (flet ((relativize-path (p)
+		   (enough-namestring p (project-config-build-dir proj))))
+	(setf init-file (relativize-path init-file)
+		  build-script (relativize-path build-script))
+  (let ((path (merge-pathnames "build.ninja" (project-config-build-dir proj))))
+	(with-open-file (os path :direction :output :if-exists :supersede)
+	  (let ((s (ninja:make-line-wrapping-stream os)))
+		(ninja:write-bindings s "lisp_impl"
+							  (format nil "sbcl ~{~A ~}--load $in"
+									  (project-config-compiler-flags proj)))
+		(format s "~%")
+		(ninja:write-rule s "REGENERATE_BUILD"
+						  :command
+						  (format nil "sbcl --script ~A --state internal/state.sexp"
+								  (relativize-path (project-config-build-file proj)))
+						  :description "Regenerating build files"
+						  :generator 1)
+		(ninja:write-rule s "LISP"
+						  :command "$lisp_impl $in"
+						  :pool "console")
+		(let ((outputs (list (project-exec-output proj))))
+		  (ninja:write-build s "LISP"
+							 :outputs (mapcar #'relativize-path outputs)
+							 :inputs (list build-script)))
+		(let ((outputs (list path init-file build-script))
+			  (inputs (list (project-config-build-file proj)
+							(asdf:system-source-file
+							 (project-config-system proj)))))
+		  ;; Putting the ASDF files here ensures that new dependencies are
+		  ;; picked up:
+		  (when (project-config-exec-system proj)
+			(push (project-config-exec-system proj) inputs))
+		  (ninja:write-build s "REGENERATE_BUILD"
+							 :outputs (mapcar #'relativize-path outputs)
+							 :inputs (mapcar #'relativize-path inputs)))
+		(ninja:write-default s (relativize-path (project-exec-output proj))))))))
+
+
 (defun emit-all-files (project)
   (declare (type project-config project))
   (let* ((source-registry-param (%build-source-registry-param project))
@@ -112,10 +153,11 @@ features and ASDF environment"
 	(format *error-output* "~%Generating output files...")
 	(finish-output *error-output*)
 	(ensure-directories-exist (project-config-build-dir project))
-	(let ((init-file-path (generate-init-env project source-registry-param)))
-	  (generate-build-exec-script project init-file-path))
-	(let ((build-state (extract-build-state project vendored)))
-	  (%write-state-file project build-state))
+	(let* ((init-file-path (generate-init-env project source-registry-param))
+		   (build-script (generate-build-exec-script project init-file-path)))
+	  (let ((build-state (extract-build-state project vendored)))
+		(%write-state-file project build-state))
+	  (%write-ninja-file project init-file-path build-script))
 	(format *error-output* "~%Done! You can now build the project.~%")))
 
 (defun finish-configure (project)
@@ -130,6 +172,8 @@ features and ASDF environment"
 			   (uiop:directory-exists-p (project-asdf-cache project)))
 	  ;; Something changed so that we can't use the old compilation
 	  ;; results. Remove them before continuing:
-	  (format *error-output* "~%Build settings changed, removing old compilation results...")
-	  (uiop:delete-directory-tree (project-asdf-cache project) :validate t))
-	(emit-all-files project)))
+	  (format *error-output* "~&Build settings changed, removing old compilation results...")
+	  (uiop:delete-directory-tree (project-asdf-cache project) :validate t)
+	  (format *error-output* "~%Done!"))
+	(emit-all-files project))
+  (uiop:quit 0))

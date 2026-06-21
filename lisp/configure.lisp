@@ -22,11 +22,22 @@
   ;; Optimization settings
   (optimization nil :type list)
   ;; symbols push to *FEATURES*; see FEATURE-SPEC
-  (features nil :type list))
+  (features nil :type list)
+  (compiler-flags nil :type list))
 
 (defun project-asdf-cache (proj)
   (declare (type project-config proj))
   (merge-pathnames "asdf-cache/" (project-config-build-dir proj)))
+
+(defun project-exec-output (proj)
+  (declare (type project-config proj))
+  (let* ((exec-sys (or (project-config-exec-system proj)
+					   (project-config-system proj))))
+	(let ((path (asdf/system:component-build-pathname exec-sys)))
+	  (if path
+		  (merge-pathnames path
+						   (project-config-base-path proj))
+		  (error 'invalid-configuration :reason ":build-pathname must be specified")))))
 
 (defun %compute-max-len (features &key (key #'identity))
   (let ((len 0))
@@ -155,7 +166,7 @@ Args:
 		(progn
 		  ,@body)
 	  (invalid-configuration (c)
-		(format *error-output* "Error: Configuration step failed: ~A~%"
+		(format *error-output* "~&~%Error: Configuration step failed: ~A~%"
 				(invalid-configuration-reason c))
 		(uiop:quit 1)))))
 
@@ -195,6 +206,11 @@ Ensure there is a ~A character at the end of directory names."
   (dolist (d directories)
 	(pushnew (list :tree (%construct-relative-directory project d))
 			 (project-config-source-registry project))))
+
+(defun add-compiler-flags (project &rest flags)
+  (setf (project-config-compiler-flags project)
+		(append (project-config-compiler-flags project)
+				flags)))
 
 (defun set-optimization (project &rest args &key speed safety debug)
   (declare (ignore speed safety debug))
