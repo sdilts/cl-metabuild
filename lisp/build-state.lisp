@@ -19,7 +19,8 @@
   ;; The optimization declaration:
   (optimization nil :type list :read-only t)
   ;; Symbols pushed to *features*:
-  (features nil :type list))
+  (features nil :type list)
+  (compiler nil :type compiler))
 
 (defun extract-build-state (config vendored)
   (declare (type project-config config)
@@ -41,7 +42,8 @@
 	 :source-registry (project-config-source-registry config)
 	 :vendored (remove-if #'null (mapcar #'asdf:system-source-file vendored))
 	 :optimization optimization
-	 :features features)))
+	 :features features
+	 :compiler (project-config-compiler config))))
 
 (defun keyed-difference (a b &key (id #'identity) (test #'eq))
   (let ((a-table (make-hash-table)))

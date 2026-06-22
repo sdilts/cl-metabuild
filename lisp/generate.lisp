@@ -113,15 +113,21 @@ features and ASDF environment"
 		  build-script (relativize-path build-script))
   (let ((path (merge-pathnames "build.ninja" (project-config-build-dir proj))))
 	(with-open-file (os path :direction :output :if-exists :supersede)
-	  (let ((s (ninja:make-line-wrapping-stream os)))
+	  (let ((s (ninja:make-line-wrapping-stream os))
+			(compiler (project-config-compiler proj)))
 		(ninja:write-bindings s "lisp_impl"
-							  (format nil "sbcl ~{~A ~}--load $in"
-									  (project-config-compiler-flags proj)))
+							  (compiler-load-cmd
+							   compiler
+							  "$in"
+							  :impl-flags (gethash (compiler-name compiler)
+												   (project-config-compiler-flags proj))))
 		(format s "~%")
 		(ninja:write-rule s "REGENERATE_BUILD"
 						  :command
-						  (format nil "sbcl --script ~A --state internal/state.sexp"
-								  (relativize-path (project-config-build-file proj)))
+						  (compiler-load-cmd
+						   compiler
+						   (relativize-path (project-config-build-file proj))
+						   :exec-flags (list "--state" "internal/state.sexp"))
 						  :description "Regenerating build files"
 						  :generator 1)
 		(ninja:write-rule s "LISP"

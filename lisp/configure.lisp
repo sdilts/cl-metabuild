@@ -23,7 +23,10 @@
   (optimization nil :type list)
   ;; symbols push to *FEATURES*; see FEATURE-SPEC
   (features nil :type list)
-  (compiler-flags nil :type list))
+  (compiler nil)
+  ;; Compiler flags to add before the load
+  ;; argument is passed
+  (compiler-flags (make-hash-table :test 'equal) :type hash-table))
 
 (defun project-asdf-cache (proj)
   (declare (type project-config proj))
@@ -207,10 +210,10 @@ Ensure there is a ~A character at the end of directory names."
 	(pushnew (list :tree (%construct-relative-directory project d))
 			 (project-config-source-registry project))))
 
-(defun add-compiler-flags (project &rest flags)
-  (setf (project-config-compiler-flags project)
-		(append (project-config-compiler-flags project)
-				flags)))
+(defun add-compiler-flags (project compiler &rest flags)
+  (let ((other-flags (gethash compiler (project-config-compiler-flags project))))
+	(setf (gethash compiler (project-config-compiler-flags project))
+		  (append other-flags flags))))
 
 (defun set-optimization (project &rest args &key speed safety debug)
   (declare (ignore speed safety debug))

@@ -86,8 +86,9 @@ Valid options are~{ ~A~}" valid-source-keys)
 	  ;; TODO: Maybe fallback to another option if the option isn't available?
 	  (unless (package-source-available-p pkg-source)
 		(error 'package-source-error
-			   :reason "System missing required dependencies for package source ~S."
-			   source-name))
+			   :reason (format nil
+							   "System missing required dependencies for package source ~S."
+							   source-name)))
 	  (setf pkg-source (copy-structure pkg-source))
 	  (init-with-cli-options pkg-source proj opts)
 	  (with-accessors ((proj-source project-config-package-source)

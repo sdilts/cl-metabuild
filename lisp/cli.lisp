@@ -65,7 +65,8 @@
 							 build-dir-option
 							 feature-group
 							 state-group)
-					   (get-package-source-opts)))))
+					   (get-package-source-opts)
+					   (get-compiler-opts)))))
 
 (defun apply-command-line-opts (parser opts proj)
   (declare (type hash-table opts)
@@ -78,6 +79,7 @@
 			(%construct-relative-directory (uiop:getcwd)
 										   (uiop:parse-native-namestring p)))))
   (apply-package-source-from-opts proj opts)
+  (apply-compiler-from-opts proj opts)
   (dolist (f (project-config-features proj))
 	(declare (type feature-spec f))
 	(multiple-value-bind (arg present)

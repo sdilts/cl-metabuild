@@ -20,9 +20,15 @@
 			   (:file "cli"
 				:depends-on ("configure" "package-source" "build-state"))
 			   (:file "generate"
-				:depends-on ("cli" "package-source" "configure" "build-state"))
+				:depends-on ("cli" "package-source" "configure" "build-state"
+								   "compiler-types"))
 			   (:file "package-source" :depends-on ("package" "configure"))
 			   (:file "build-state" :depends-on ("package" "configure"))
+			   (:file "compiler-types" :depends-on ("package" "configure"))
+			   (:module compilers
+				:depends-on ("compiler-types")
+				:components ((:file "sbcl")
+							 (:file "ccl")))
 			   (:module sources
 				:depends-on ("package-source" "util")
 				:components ((:file "quicklisp")))))
