@@ -12,7 +12,7 @@ projects. Once setup, this is all a user need to to do get a working binary:
 
 cl-metabuild allows you to make configure the following features of
 your build environment without editing any source code:
-+ `*FEATURES*` flags
++ =*FEATURES*= flags
 + Optimizations and other global declarations
 
 It also provides build environment isolation and can automatically
@@ -33,7 +33,7 @@ build system is invoked changes.
 ** Developer Instructions
 
 1. Download this repository into your source tree.
-2. Create a `setup.lisp` file that sets up cl-metabuild and configures
+2. Create a =setup.lisp= file that sets up cl-metabuild and configures
    the project.
 
 *** Setup file
