@@ -1,0 +1,78 @@
+* cl-metabuild
+
+Bringing the configure - make - (TODO: install) process to Common Lisp
+projects. Once setup, this is all a user need to to do get a working binary:
+
+#+BEGIN_SRC bash
+  ./setup.lisp
+  ninja -C build
+#+END_SRC
+
+** Why cl-metabuild?
+
+cl-metabuild allows you to make configure the following features of
+your build environment without editing any source code:
++ `*FEATURES*` flags
++ Optimizations and other global declarations
+
+It also provides build environment isolation and can automatically
+download dependencies from your favorite package source.
+
+There's also support for building projects with different Common Lisp
+implementations.
+
+
+** How?
+
+This project provides a set of scripts that generate a build.ninja
+file. This choreographs building and configuring the
+application. Projects still use the standard ASDF mechanisms, so
+regular ASDF features and extensions are unafffected; only how the
+build system is invoked changes.
+
+** Developer Instructions
+
+1. Download this repository into your source tree.
+2. Create a `setup.lisp` file that sets up cl-metabuild and configures
+   the project.
+
+*** Setup file
+   #+BEGIN_SRC lisp
+     #!/usr/bin/env -S sbcl --script
+
+     (require 'asdf)
+
+     ;; If using quicklisp, load the setup file
+     ;; TODO: make this not needed somehow, or make the
+     ;;  OCICL or qlot backends work:
+     (load "/home/stuart/quicklisp/setup.lisp")
+
+     ;; Make the cl-metabuild system visible to ASDF:
+     (let ((cur-directory
+     	   (make-pathname
+     		:directory (pathname-directory
+     					(or *load-truename* *compile-file-pathname*)))))
+       (asdf:initialize-source-registry
+        (list :source-registry
+     		 (list :directory cur-directory)
+     		 :inherit-configuration)))
+
+     ;; Load cl-metabuild:
+     (asdf:load-system "static-build")
+
+     ;; Configure the project
+     (static-build::with-project project
+     	("project-name")
+       (static-build:add-features project
+     	(:hrt-debug :default t))
+       (static-build::add-compiler-flags
+        project
+        "sbcl"
+        "--noinform"
+        "--load"
+        (merge-pathnames "quicklisp/setup.lisp"
+     					(user-homedir-pathname)))
+       (static-build::set-optimization project :debug 3 :speed 2)
+       ;; Emit the build files:
+       (static-build::finish-configure project))
+   #+END_SRC
