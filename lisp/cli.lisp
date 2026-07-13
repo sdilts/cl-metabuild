@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (defun %build-feature-group (proj)
   (let ((feature-options nil))

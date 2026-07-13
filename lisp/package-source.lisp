@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (defgeneric install-dependencies (source project dependencies)
   (:documentation "Install the given dependencies using the given
@@ -155,7 +155,7 @@ Valid options are~{ ~A~}" valid-source-keys)
   (declare (type project-config project))
   ;; We need to clear this project's dependencies so they
   ;; aren't counted as present:
-  (let ((cur-sys (asdf:find-system "static-build")))
+  (let ((cur-sys (asdf:find-system "metabuild")))
 	(dolist (d (asdf:system-depends-on cur-sys))
 	  (asdf:clear-system d)))
   (format *error-output* "~%Checking project dependencies...~%")

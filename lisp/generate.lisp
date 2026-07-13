@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (defun %print-file-header (proj file-source stream)
   (declare (type project-config proj)

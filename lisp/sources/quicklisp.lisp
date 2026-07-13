@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (define-pkg-source (quicklisp-source "quicklisp")
   (home nil :type (or null pathname))

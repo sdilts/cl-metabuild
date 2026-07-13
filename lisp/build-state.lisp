@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (defstruct build-state
   (system nil :type string :read-only t)

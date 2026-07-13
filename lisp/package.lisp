@@ -1,4 +1,4 @@
-(defpackage #:static-build
+(defpackage #:metabuild
   (:use :cl)
   (:export
    #:with-project

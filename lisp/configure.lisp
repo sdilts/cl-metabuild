@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (defstruct feature-spec
   (feature nil :type symbol :read-only t)

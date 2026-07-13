@@ -1,4 +1,4 @@
-(in-package #:static-build)
+(in-package #:metabuild)
 
 (defmacro with-env-values (value-spec &body body)
   (let ((vars (mapcar (lambda (x)

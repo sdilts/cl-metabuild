@@ -58,7 +58,7 @@ build system is invoked changes.
      		 :inherit-configuration)))
 
      ;; Load cl-metabuild:
-     (asdf:load-system "static-build")
+     (asdf:load-system "cl-metabuild")
 
      ;; Configure the project
      (static-build::with-project project
