@@ -133,10 +133,13 @@ features and ASDF environment"
 		(ninja:write-rule s "LISP"
 						  :command "$lisp_impl $in"
 						  :pool "console")
+		(ninja:write-build s "phony"
+						   :outputs (list "PHONY"))
 		(let ((outputs (list (project-exec-output proj))))
 		  (ninja:write-build s "LISP"
 							 :outputs (mapcar #'relativize-path outputs)
-							 :inputs (list build-script)))
+							 :inputs (list build-script)
+							 :implicit-inputs (list "PHONY")))
 		(let ((outputs (list path init-file build-script))
 			  (inputs (list (project-config-build-file proj)
 							(asdf:system-source-file
