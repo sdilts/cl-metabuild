@@ -1,4 +1,4 @@
-(asdf:defsystem #:static-build
+(asdf:defsystem #:cl-metabuild
   :description "Meta build system for Common Lisp that allows a configure-build-install workflow"
   :author "Stuart Dilts"
   :license "MIT"

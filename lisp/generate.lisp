@@ -144,7 +144,7 @@ features and ASDF environment"
 		  ;; Putting the ASDF files here ensures that new dependencies are
 		  ;; picked up:
 		  (when (project-config-exec-system proj)
-			(push (project-config-exec-system proj) inputs))
+			(push (asdf:system-source-file (project-config-exec-system proj)) inputs))
 		  (ninja:write-build s "REGENERATE_BUILD"
 							 :outputs (mapcar #'relativize-path outputs)
 							 :inputs (mapcar #'relativize-path inputs)))
