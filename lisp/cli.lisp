@@ -13,7 +13,8 @@
 		  (push (adopt:make-option
 				 name
 				 :parameter "y-or-n"
-				 :long (concatenate 'string "with-" symb-name)
+				 :long (concatenate 'string "with-"
+									(string-downcase symb-name))
 				 :help (format nil "Include ~S in *FEATURES*" name)
 				 :initial-value default
 				 :reduce (lambda (prev new)
