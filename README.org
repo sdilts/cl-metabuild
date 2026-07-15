@@ -1,7 +1,7 @@
 * cl-metabuild
 
 Bringing the configure - make - (TODO: install) process to Common Lisp
-projects. Once setup, this is all a user need to to do get a working binary:
+projects. Once setup, this is all a user needs to to do get a working binary:
 
 #+BEGIN_SRC bash
   ./setup.lisp
@@ -10,7 +10,7 @@ projects. Once setup, this is all a user need to to do get a working binary:
 
 ** Why cl-metabuild?
 
-cl-metabuild allows you to make configure the following features of
+cl-metabuild allows you to configure the following features of
 your build environment without editing any source code:
 + =*FEATURES*= flags
 + Optimizations and other global declarations
