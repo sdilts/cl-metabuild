@@ -86,7 +86,6 @@
 			(reverse source-registry)))
   (format stream "~%"))
 
-
 (define-condition invalid-configuration ()
   ((reason :initarg :reason :reader invalid-configuration-reason))
   (:report (lambda (condition stream)
@@ -210,10 +209,10 @@ Ensure there is a ~A character at the end of directory names."
 	(pushnew (list :tree (%construct-relative-directory project d))
 			 (project-config-source-registry project))))
 
-(defun add-compiler-flags (project compiler &rest flags)
+(defun add-compiler-flags (project compiler &key impl-flags exec-flags)
   (let ((other-flags (gethash compiler (project-config-compiler-flags project))))
 	(setf (gethash compiler (project-config-compiler-flags project))
-		  (append other-flags flags))))
+		  (append other-flags exec-flags))))
 
 (defun set-optimization (project &rest args &key speed safety debug)
   (declare (ignore speed safety debug))

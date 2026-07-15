@@ -4,6 +4,7 @@
   :license "MIT"
   :version "0.0.0"
   :pathname "lisp/"
+  :build-pathname "cl-metabuild"
   :depends-on (#:uiop
 			   #:adopt
 			   #:quicklisp

@@ -48,45 +48,65 @@
 				  output-translations)
 			stream)))
 
+(defmacro with-generated-file ((stream name project) &body body)
+  (let ((proj-var (gensym "project"))
+		(path-var (gensym "path")))
+	`(let* ((,proj-var ,project)
+		   (,path-var (make-pathname
+					   :directory (pathname-directory
+								   (project-config-build-dir ,proj-var))
+					   :name ,name
+					   :type "lisp")))
+	   (with-open-file
+		   (,stream ,path-var :direction :output :if-exists :supersede)
+		 (%print-file-header ,proj-var (project-config-build-file proj) ,stream)
+		 ,@body
+		 ,path-var))))
+
 (defun generate-init-env (proj source-registry)
   "Generate the init-build-env.lisp file that initializes the
 features and ASDF environment"
   (declare (type project-config proj))
-  (let ((path (make-pathname
-			   :directory (pathname-directory (project-config-build-dir proj))
-			   :name "init-build-env"
-			   :type "lisp")))
-
-	(with-open-file (stream path :direction :output :if-exists :supersede)
-	  (%print-file-header proj (project-config-build-file proj) stream)
-	  (pprint `(require "asdf") stream)
-	  (%insert-declarations proj stream)
-	  (%generate-features-insert proj stream)
-	  (%generate-asdf-config proj source-registry stream)
-	  (format stream "~&"))
-	path))
+  (with-generated-file (stream "init-build-env" proj)
+	(pprint `(require "asdf") stream)
+	(%insert-declarations proj stream)
+	(%generate-features-insert proj stream)
+	(%generate-asdf-config proj source-registry stream)
+	(format stream "~&")))
 
 (defun generate-build-exec-script (proj init-path)
   (declare (type project-config proj))
-  (let ((path (make-pathname
-			   :directory (pathname-directory (project-config-build-dir proj))
-			   :name "build"
-			   :type "lisp")))
-	(with-open-file (stream path :direction :output :if-exists :supersede)
-	  (with-accessors ((build-file project-config-build-file)
-					   (exec-sys project-config-exec-system)
-					   (sys project-config-system))
-		  proj
-		(%print-file-header proj (project-config-build-file proj) stream)
-		(pprint `(load ,init-path)
-				stream)
-		(pprint (list 'asdf:make (asdf:component-name
-								  (if exec-sys
-									  exec-sys
-									  sys)))
-				stream)
-		(format stream "~&")))
-	path))
+  (with-generated-file (stream "build" proj)
+	(with-accessors ((build-file project-config-build-file)
+					 (exec-sys project-config-exec-system)
+					 (sys project-config-system))
+		proj
+	  (pprint `(load ,init-path) stream)
+	  (pprint (list 'asdf:make (asdf:component-name
+								(if exec-sys
+									exec-sys
+									sys)))
+			  stream)
+	  (format stream "~&"))))
+
+(defun generate-bundle-script (proj init-path)
+  (declare (type project-config proj))
+  (with-generated-file (stream "bundle" proj)
+	(with-accessors ((build-file project-config-build-file)
+					 (exec-sys project-config-exec-system)
+					 (sys project-config-system))
+		proj
+	  (pprint `(load ,init-path) stream)
+	  (let ((var-symb (intern "project-var" :cl-user)))
+		(pprint `(let ((,var-symb (asdf:perform
+								   'asdf:monolithic-concatenate-source-op
+								   (asdf:find-system
+									,(asdf:component-name
+									  (if exec-sys
+										  exec-sys
+										  sys))))))
+				   (format t "Bundle file ~A created.~%" ,var-symb))
+				stream)))))
 
 (defun %internal-dir (proj)
   (declare (type project-config proj))
@@ -105,7 +125,7 @@ features and ASDF environment"
 	(with-open-file (stream path :direction :output :if-exists :supersede)
 	  (pprint build-state stream))))
 
-(defun %write-ninja-file (proj init-file build-script)
+(defun %write-ninja-file (proj init-file build-script bundle-script)
   (declare (optimize (debug 3)))
   (flet ((relativize-path (p)
 		   (enough-namestring p (project-config-build-dir proj))))
@@ -136,6 +156,12 @@ features and ASDF environment"
 							 :outputs (mapcar #'relativize-path outputs)
 							 :inputs (list build-script)
 							 :implicit-inputs (list "PHONY")))
+		(let ((bundle-file-path (merge-pathnames
+								 #p"build/test-exec.lisp"
+								 (project-asdf-cache proj))))
+		  (ninja:write-build s "LISP"
+							 :inputs (list (relativize-path bundle-script))
+							 :outputs (list bundle-file-path)))
 		(let ((outputs (list path init-file build-script))
 			  (inputs (list (project-config-build-file proj)
 							(asdf:system-source-file
@@ -149,7 +175,6 @@ features and ASDF environment"
 							 :inputs (mapcar #'relativize-path inputs)))
 		(ninja:write-default s (relativize-path (project-exec-output proj))))))))
 
-
 (defun emit-all-files (project)
   (declare (type project-config project))
   (let* ((source-registry-param (%build-source-registry-param project))
@@ -159,10 +184,11 @@ features and ASDF environment"
 	(finish-output *error-output*)
 	(ensure-directories-exist (project-config-build-dir project))
 	(let* ((init-file-path (generate-init-env project source-registry-param))
-		   (build-script (generate-build-exec-script project init-file-path)))
+		   (build-script (generate-build-exec-script project init-file-path))
+		   (bundle-script (generate-bundle-script project init-file-path)))
 	  (let ((build-state (extract-build-state project vendored)))
 		(%write-state-file project build-state))
-	  (%write-ninja-file project init-file-path build-script))
+	  (%write-ninja-file project init-file-path build-script bundle-script))
 	(format *error-output* "~%Done! You can now build the project.~%")))
 
 (defun finish-configure (project)

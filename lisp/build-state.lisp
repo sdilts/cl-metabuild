@@ -83,7 +83,6 @@ lists"
 	  (not (package-source-equals (project-config-package-source project)
 										(build-state-pkg-source last-state)))))
 
-
 (defun read-build-state (state-file-path)
   (declare (type string state-file-path))
   (let* ((path (uiop:parse-native-namestring state-file-path))
