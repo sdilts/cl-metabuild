@@ -115,23 +115,19 @@ features and ASDF environment"
 	(with-open-file (os path :direction :output :if-exists :supersede)
 	  (let ((s (ninja:make-line-wrapping-stream os))
 			(compiler (project-config-compiler proj)))
-		(ninja:write-bindings s "lisp_impl"
-							  (compiler-load-cmd
-							   compiler
-							  "$in"
-							  :impl-flags (gethash (compiler-name compiler)
-												   (project-config-compiler-flags proj))))
-		(format s "~%")
 		(ninja:write-rule s "REGENERATE_BUILD"
 						  :command
-						  (compiler-load-cmd
-						   compiler
-						   (relativize-path (project-config-build-file proj))
-						   :exec-flags (list "--state" "internal/state.sexp"))
+						  (format nil "~A --state \"internal/state.sexp\""
+								  (relativize-path
+								   (project-config-build-file proj)))
 						  :description "Regenerating build files"
 						  :generator 1)
 		(ninja:write-rule s "LISP"
-						  :command "$lisp_impl $in"
+						  :command (compiler-load-cmd
+									compiler
+									"$in"
+									:impl-flags (gethash (compiler-name compiler)
+														 (project-config-compiler-flags proj)))
 						  :pool "console")
 		(ninja:write-build s "phony"
 						   :outputs (list "PHONY"))

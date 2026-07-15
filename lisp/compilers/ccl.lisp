@@ -3,10 +3,10 @@
 (define-compiler (ccl-compiler "ccl"))
 
 (defmethod compiler-load-cmd ((compiler ccl-compiler) lisp-file &key impl-flags exec-flags)
-  (format nil "~A ~{~A ~}--load ~A ~@[--~]~{ ~A~}"
+  (format nil "cat ~A | ~A -b~{ ~A~}~@[ --~]~{ ~A~}"
+		  lisp-file
 		  (compiler-path compiler)
 		  impl-flags
-		  lisp-file
 		  exec-flags
 		  exec-flags))
 
