@@ -32,4 +32,7 @@
 							 (:file "ccl")))
 			   (:module sources
 				:depends-on ("package-source" "util")
-				:components ((:file "quicklisp")))))
+				:components ((:file "ocicl")
+							 (:file "qlot")
+							 #+quicklisp
+							 (:file "quicklisp")))))
