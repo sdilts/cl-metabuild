@@ -97,6 +97,18 @@
 		 (dir (pathname-directory p)))
 	(make-pathname :directory dir)))
 
+(defun %relative-directory-p (pathname)
+  (let ((directory (pathname-directory pathname)))
+	(if (and (not (null directory))
+			 (listp directory)
+			 (not (pathname-name pathname)))
+        (eq (car directory) :relative)
+		(error 'invalid-configuration
+			   :reason (format nil "~S is not a directory.
+Ensure there is a ~A character at the end of directory names."
+							   pathname
+							   (uiop:directory-separator-for-host))))))
+
 (defun %construct-relative-directory (base pathname)
   (if (%relative-directory-p pathname)
 	  (uiop:merge-pathnames* pathname (etypecase base
@@ -185,17 +197,7 @@ Args:
 (defmacro add-features (project &body feature-specs)
   `(%add-features ,project (quote ,feature-specs)))
 
-(defun %relative-directory-p (pathname)
-  (let ((directory (pathname-directory pathname)))
-	(if (and (not (null directory))
-			 (listp directory)
-			 (not (pathname-name pathname)))
-        (eq (car directory) :relative)
-		(error 'invalid-configuration
-			   :reason (format nil "~S is not a directory.
-Ensure there is a ~A character at the end of directory names."
-							   pathname
-							   (uiop:directory-separator-for-host))))))
+
 
 (defun add-vendor-directories (project &rest directories)
   (declare (type project-config project))

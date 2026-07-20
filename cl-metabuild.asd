@@ -19,12 +19,13 @@
 			   (:file "util" :depends-on ("package"))
 			   (:file "configure" :depends-on ("package"))
 			   (:file "cli"
-				:depends-on ("configure" "package-source" "build-state"))
+				:depends-on ("configure" "package-source" "build-state" "compilers"))
 			   (:file "generate"
 				:depends-on ("cli" "package-source" "configure" "build-state"
 								   "compiler-types"))
 			   (:file "package-source" :depends-on ("package" "configure"))
-			   (:file "build-state" :depends-on ("package" "configure"))
+			   (:file "build-state" :depends-on ("package" "configure" "compilers"
+														   "sources"))
 			   (:file "compiler-types" :depends-on ("package" "configure"))
 			   (:module compilers
 				:depends-on ("compiler-types")
