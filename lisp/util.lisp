@@ -29,7 +29,10 @@
 
 (defun pathname-under-p (under top)
   (if (and under top)
-	  (not (eq :absolute (car (pathname-directory
-							   (enough-namestring (truename under)
-												  (truename top))))))
+	  (let ((under-truename (probe-file under))
+			(top-truename (probe-file top)))
+		(when (and under-truename top-truename)
+		  (not (eq :absolute (car (pathname-directory
+								   (enough-namestring under-truename
+													  top-truename)))))))
 	  nil))
