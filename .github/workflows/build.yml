@@ -15,8 +15,6 @@ jobs:
         run: |
           dnf -y install sbcl curl ninja
       - uses: actions/checkout@v5
-        with:
-          submodules: 'recursive'
       - name: Install Quicklisp Environment
         run: |
           curl -O https://beta.quicklisp.org/quicklisp.lisp
