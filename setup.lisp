@@ -1,10 +1,12 @@
-#!/usr/bin/env -S sbcl --load "/home/stuart/quicklisp/setup.lisp" --script
+#!/usr/bin/env -S sbcl --script
+
+;; It's safe to use quicklisp for this:
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+									   (user-homedir-pathname))))
+  (when (probe-file quicklisp-init)
+    (load quicklisp-init)))
 
 (require 'asdf)
-
-;; If using quicklisp, load the setup file
-;; TODO: make this not needed somehow:
-(load "/home/stuart/quicklisp/setup.lisp")
 
 ;; Make the cl-metabuild visible to ASDF:
 (let ((cur-directory

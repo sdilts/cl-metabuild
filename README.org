@@ -42,10 +42,12 @@ build system is invoked changes.
 
      (require 'asdf)
 
-     ;; If using quicklisp, load the setup file
-     ;; TODO: make this not needed somehow, or make the
-     ;;  OCICL or qlot backends work:
-     (load "/home/stuart/quicklisp/setup.lisp")
+     ;; If users can use quicklisp to load dependencies,
+     ;; it has to be loaded here:
+     (let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+     									   (user-homedir-pathname))))
+       (when (probe-file quicklisp-init)
+         (load quicklisp-init)))
 
      ;; Make the cl-metabuild system visible to ASDF:
      (let ((cur-directory
