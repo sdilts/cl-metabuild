@@ -38,3 +38,6 @@
 (defmethod init-with-cli-options ((source ocicl-source) project opts)
   (setf (ocicl-source-dir source)
 		(merge-pathnames "ocicl/" (project-config-base-path project))))
+
+(defmethod setup-package-source ((source ocicl-source) project)
+  (invoke-ocicl-install project (list)))

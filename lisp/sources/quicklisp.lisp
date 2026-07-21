@@ -74,13 +74,13 @@
 						   "Specified quicklisp home directory ~S does not exist"
 						   ql-home)))
   (with-open-file (s (merge-pathnames "quicklisp/version.txt"
-									   ql-home))
+									  ql-home))
 	(let ((desired-version (uiop:slurp-stream-string s :stripped t))
 		  (loaded-version (ql:client-version)))
 	  (unless (string= desired-version loaded-version)
-		 (error 'package-source-available-error
-			 :reason (format nil "Quicklisp versions do not match (loaded ~A) (specified ~A)"
-							 loaded-version desired-version))))))
+		(error 'package-source-available-error
+			   :reason (format nil "Quicklisp versions do not match (loaded ~A) (specified ~A)"
+							   loaded-version desired-version))))))
 
 #+quicklisp
 (defmethod init-with-cli-options ((source quicklisp-source) project opts)
@@ -90,3 +90,8 @@
 		  (quicklisp-source-dist-dir source)
 		  (merge-pathnames "dists/"
 						   (quicklisp-source-home source)))))
+
+#+quicklisp
+(defmethod setup-package-source ((source quicklisp-source) project)
+  ;; Nothing to do here right now
+  )
