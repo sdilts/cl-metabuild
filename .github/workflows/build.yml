@@ -1,0 +1,35 @@
+name: Bundle
+
+on:
+  push:
+    branches: master
+  pull_request:
+
+jobs:
+  Bundle:
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:latest
+    steps:
+      - name: Install System Packages
+        run: |
+          dnf -y install sbcl curl ninja
+      - uses: actions/checkout@v5
+        with:
+          submodules: 'recursive'
+      - name: Install Quicklisp Environment
+        run: |
+          curl -O https://beta.quicklisp.org/quicklisp.lisp
+          sbcl --noinform --load quicklisp.lisp --eval "(quicklisp-quickstart:install)"
+          sbcl --noinform --load "$HOME/quicklisp/setup.lisp" \
+               --eval "(progn (setf ql-util::*do-not-prompt* t)(ql:add-to-init-file))"
+      - name: Setup
+        run: |
+          chmod +x setup.lisp
+          ./setup.lisp
+      - name: Bundle
+        run: ninja -C build bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          path: build/asdf-cache/lisp/cl-metabuild.lisp
+          archive: false
