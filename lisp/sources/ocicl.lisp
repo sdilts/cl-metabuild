@@ -1,6 +1,6 @@
 (in-package #:metabuild)
 
-(define-pkg-source (ocicl-source "ocicl")
+(define-pkg-source (ocicl-source "ocicl" :priority 2)
   (dir nil))
 
 (defmethod package-source-available-p ((source ocicl-source))

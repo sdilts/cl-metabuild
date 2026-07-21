@@ -1,6 +1,6 @@
 (in-package #:metabuild)
 
-(define-pkg-source (qlot-source "qlot")
+(define-pkg-source (qlot-source "qlot" :priority 2)
 	(dir nil))
 
 (defun invoke-qlot-install (proj dependencies)

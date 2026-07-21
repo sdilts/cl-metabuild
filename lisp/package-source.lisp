@@ -40,9 +40,10 @@ source will place the dependencies in"))
 (defvar *package-sources* (make-hash-table :test 'equal))
 
 (defstruct package-source
-  (name nil :type string))
+  (name nil :type string)
+  (priority nil :type number))
 
-(defmacro define-pkg-source ((name designator)
+(defmacro define-pkg-source ((name designator &key (priority 1))
 							 &body direct-slots)
   (let ((ds (gensym "designator"))
 		(constructor-name (intern (string-upcase
@@ -54,7 +55,7 @@ source will place the dependencies in"))
 		 (defstruct (,name (:include package-source))
 		   ,@direct-slots)
 		 (setf (gethash ,ds *package-sources*)
-			   (,constructor-name :name ,ds))))))
+			   (,constructor-name :name ,ds :priority ,priority))))))
 
 (defun get-package-source-opts ()
   (let ((source-opts nil)
@@ -77,30 +78,47 @@ Valid options are~{ ~A~}" valid-source-keys)
 						 new))
 	 source-opts)))
 
-(defun apply-package-source-from-opts (proj opts)
+(defun %determine-package-source (proj opts)
+  (declare (type project-config proj))
   (let ((source-name (gethash 'package-source-type opts)))
-	(unless source-name
-	  (setf source-name "ocicl"))
-	(let ((pkg-source (gethash source-name *package-sources*)))
-	  (unless pkg-source
-		(error 'package-source-error
-			   :reason (format nil "No package source named ~S avaiable"
-							   source-name)))
-	  ;; TODO: Maybe fallback to another option if the option isn't available?
-	  (unless (package-source-available-p pkg-source)
-		(error 'package-source-error
-			   :reason (format nil
-							   "System missing required dependencies for package source ~S."
-							   source-name)))
-	  (setf pkg-source (copy-structure pkg-source))
-	  (init-with-cli-options pkg-source proj opts)
-	  (with-accessors ((proj-source project-config-package-source)
-					   (proj-registry project-config-source-registry))
-		  proj
-		(setf proj-source pkg-source
-			  proj-registry (append
-							 (dependency-source-registry pkg-source)
-							 proj-registry))))))
+	(if source-name
+		(let ((pkg-source (gethash source-name *package-sources*)))
+		  (unless pkg-source
+			(error 'package-source-error
+				   :reason (format nil "No package source named ~S avaiable"
+								   source-name)))
+		  ;; TODO: Maybe fallback to another option if the option isn't available?
+		  (unless (package-source-available-p pkg-source)
+			(error 'package-source-error
+				   :reason (format nil
+								   "System missing required dependencies for package source ~S."
+								   source-name)))
+		  pkg-source)
+		(let ((available-packages (list)))
+		  (maphash (lambda (k v)
+					 (when (package-source-available-p v)
+					   (push (cons k v) available-packages)))
+				   *package-sources*)
+		  (when (not available-packages)
+			(error 'package-source-error
+				   :reason (format nil "No packages sources available")))
+		  (let ((src (first (sort available-packages #'>
+							:key (lambda (x)
+								   (package-source-priority (cdr x)))))))
+			(format t "Using package source ~A~%" (car src))
+			(cdr src))))))
+
+(defun apply-package-source-from-opts (proj opts)
+  (let ((pkg-source (%determine-package-source proj opts)))
+	(setf pkg-source (copy-structure pkg-source))
+	(init-with-cli-options pkg-source proj opts)
+	(with-accessors ((proj-source project-config-package-source)
+					 (proj-registry project-config-source-registry))
+		proj
+	  (setf proj-source pkg-source
+			proj-registry (append
+						   (dependency-source-registry pkg-source)
+						   proj-registry)))))
 
 (defmacro with-missing-dependency-fetcher ((project source-registry-param
 											&key purpose)
