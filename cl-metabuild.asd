@@ -7,7 +7,10 @@
   :build-pathname "cl-metabuild"
   :depends-on (#:uiop
 			   #:adopt
-			   #:quicklisp
+			   ;; Quicklisp is weird and doesn't work with the asdf bundler.
+			   ;; As such, make users bring their own; there are #+quicklisp
+			   ;; directives that should make it work when bundled separately:
+			   ;; #:quicklisp
 			   #:trivial-gray-streams
 			   #:local-time)
   :components ((:module ninja
@@ -35,5 +38,5 @@
 				:depends-on ("package-source" "util")
 				:components ((:file "ocicl")
 							 (:file "qlot")
-							 #+quicklisp
+							 ;; #+quicklisp
 							 (:file "quicklisp")))))

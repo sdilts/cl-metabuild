@@ -1,9 +1,11 @@
 (in-package #:metabuild)
 
+#+quicklisp
 (define-pkg-source (quicklisp-source "quicklisp")
   (home nil :type (or null pathname))
   (dist-dir nil :type (or null pathname)))
 
+#+quicklisp
 (defun %get-systems (tree table)
   (cond ((atom tree)
 		 (when tree
@@ -11,6 +13,7 @@
 		(t (%get-systems (car tree) table)
 		   (%get-systems (cdr tree) table))))
 
+#+quicklisp
 (defmethod install-dependencies ((source quicklisp-source) project dependencies)
   (declare (ignore project)
 		   (optimize (debug 3)))
@@ -24,14 +27,17 @@
 	(loop for k being the hash-keys of required
 		  do (ql-dist:ensure-installed k))))
 
+#+quicklisp
 (defmethod dependency-source-registry ((source quicklisp-source))
   (list `(:tree ,(quicklisp-source-dist-dir source))))
 
+#+quicklisp
 (defmethod system-from-source-p ((source quicklisp-source) system)
   (let ((dist-path (quicklisp-source-dist-dir source)))
 	(pathname-under-p (asdf:system-source-directory system)
 					  dist-path)))
 
+#+quicklisp
 (defmethod package-source-equals ((a quicklisp-source) (b quicklisp-source))
   (with-accessors ((a-dist quicklisp-source-dist-dir)
 				   (a-home quicklisp-source-home))
@@ -42,6 +48,7 @@
 	  (and (equalp a-dist b-dist)
 		   (equalp a-home b-home)))))
 
+#+quicklisp
 (defmethod get-cli-options ((source quicklisp-source))
   (let ((home-option (adopt:make-option
 					  'quicklisp-home
@@ -58,6 +65,7 @@
 	 :title "Options for Quicklisp package Source"
 	 :options (list home-option))))
 
+#+quicklisp
 (defun validate-ql-install (ql-home)
   (declare (type pathname ql-home))
   (unless (probe-file ql-home)
@@ -74,6 +82,7 @@
 			 :reason (format nil "Quicklisp versions do not match (loaded ~A) (specified ~A)"
 							 loaded-version desired-version))))))
 
+#+quicklisp
 (defmethod init-with-cli-options ((source quicklisp-source) project opts)
   (let ((ql-home (gethash 'quicklisp-home opts)))
 	(validate-ql-install ql-home)
