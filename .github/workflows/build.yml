@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Install System Packages
         run: |
-          dnf -y install git sbcl curl ninja
+          dnf -y install git sbcl curl ninja which
       - uses: actions/checkout@v5
       - name: Install Quicklisp Environment
         run: |
