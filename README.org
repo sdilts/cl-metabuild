@@ -43,13 +43,14 @@ build system is invoked changes.
      (require 'asdf)
 
      ;; If users can use quicklisp to load dependencies,
-     ;; it has to be loaded here:
+     ;; it has to be loaded here. Don't include this
+     ;; if your project uses ocicl or qlot
      (let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
      									   (user-homedir-pathname))))
        (when (probe-file quicklisp-init)
          (load quicklisp-init)))
 
-     ;; Make the cl-metabuild system visible to ASDF:
+     ;; Make the system you want to build visible to ASDF:
      (let ((cur-directory
      	   (make-pathname
      		:directory (pathname-directory
@@ -59,8 +60,9 @@ build system is invoked changes.
      		 (list :directory cur-directory)
      		 :inherit-configuration)))
 
-     ;; Load cl-metabuild:
-     (asdf:load-system "cl-metabuild")
+     ;; Load cl-metabuild. You'll need to check the bundled
+     ;; project into your repository:
+     (load "cl-metabuild.lisp")
 
      ;; Configure the project
      (static-build::with-project project
