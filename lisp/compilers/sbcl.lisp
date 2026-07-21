@@ -3,11 +3,11 @@
 (define-compiler (sbcl-compiler "sbcl"))
 
 (defmethod compiler-load-cmd ((compiler sbcl-compiler) lisp-file &key impl-flags exec-flags)
-  (format nil "~A --disable-ldb --lose-on-corruption ~{~A ~}--end-runtime-options --script ~A~{ ~A~}"
+  (format nil "~A --disable-ldb --lose-on-corruption ~{~A ~}--end-runtime-options~{ ~A~} --script ~A"
 		  (compiler-path compiler)
 		  impl-flags
-		  lisp-file
-		  exec-flags))
+		  exec-flags
+		  lisp-file))
 
 (defmethod compiler-exe-name ((compiler sbcl-compiler))
   "sbcl")

@@ -147,7 +147,9 @@ features and ASDF environment"
 									compiler
 									"$in"
 									:impl-flags (gethash (compiler-name compiler)
-														 (project-config-compiler-flags proj)))
+														 (project-config-impl-compiler-flags proj))
+									:exec-flags (gethash (compiler-name compiler)
+														 (project-config-pre-exec-compiler-flags proj)))
 						  :pool "console")
 		(ninja:write-build s "phony"
 						   :outputs (list "PHONY"))
@@ -158,11 +160,15 @@ features and ASDF environment"
 							 :implicit-inputs (list "PHONY")))
 		(let ((bundle-file-path (merge-pathnames
 								 #p"build/test-exec.lisp"
-								 (project-asdf-cache proj))))
+								 (project-asdf-cache proj)))
+			  (relative-bundle-path (relativize-path bundle-script)))
 		  (ninja:write-build s "LISP"
-							 :inputs (list (relativize-path bundle-script))
-							 :outputs (list bundle-file-path)))
-		(let ((outputs (list path init-file build-script))
+							 :inputs (list relative-bundle-path)
+							 :outputs (list bundle-file-path))
+		  (ninja:write-build s "phony"
+							 :outputs (list "bundle")
+							 :inputs (list bundle-file-path)))
+		(let ((outputs (list path init-file build-script bundle-script))
 			  (inputs (list (project-config-build-file proj)
 							(asdf:system-source-file
 							 (project-config-system proj)))))

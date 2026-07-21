@@ -26,7 +26,8 @@
   (compiler nil)
   ;; Compiler flags to add before the load
   ;; argument is passed
-  (compiler-flags (make-hash-table :test 'equal) :type hash-table))
+  (pre-exec-compiler-flags (make-hash-table :test 'equal) :type hash-table)
+  (impl-compiler-flags (make-hash-table :test 'equal) :type hash-table))
 
 (defun project-asdf-cache (proj)
   (declare (type project-config proj))
@@ -212,9 +213,15 @@ Args:
 			 (project-config-source-registry project))))
 
 (defun add-compiler-flags (project compiler &key impl-flags exec-flags)
-  (let ((other-flags (gethash compiler (project-config-compiler-flags project))))
-	(setf (gethash compiler (project-config-compiler-flags project))
-		  (append other-flags exec-flags))))
+  (declare (type project-config project))
+  (flet ((add-flags (accessor flags)
+		   (let ((other-flags (gethash compiler
+									   (funcall accessor project))))
+			 (setf (gethash compiler (funcall accessor project))
+				   (append other-flags flags)))))
+	(declare (inline add-flags))
+	(add-flags #'project-config-pre-exec-compiler-flags exec-flags)
+	(add-flags #'project-config-impl-compiler-flags impl-flags)))
 
 (defun set-optimization (project &rest args &key speed safety debug)
   (declare (ignore speed safety debug))

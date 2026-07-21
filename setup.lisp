@@ -22,7 +22,8 @@
 	("cl-metabuild")
   (metabuild::add-compiler-flags
    project "sbcl"
-   "--load"
-   (merge-pathnames "quicklisp/setup.lisp"
-     				(user-homedir-pathname)))
+   :exec-flags (list
+				"--load"
+				(merge-pathnames "quicklisp/setup.lisp"
+     							 (user-homedir-pathname))))
   (metabuild::finish-configure project))
