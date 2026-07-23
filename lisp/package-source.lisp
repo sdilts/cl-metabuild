@@ -102,9 +102,9 @@ Valid options are~{ ~A~}" valid-source-keys)
 		  (when (not available-packages)
 			(error 'package-source-error
 				   :reason (format nil "No packages sources available")))
-		  (let ((src (first (sort available-packages #'>
-							:key (lambda (x)
-								   (package-source-priority (cdr x)))))))
+		  (let ((src (max-key available-packages #'>
+							  :key (lambda (x)
+									 (package-source-priority (cdr x))))))
 			(format t "Using package source ~A~%" (car src))
 			(cdr src))))))
 

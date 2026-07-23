@@ -36,3 +36,12 @@
 								   (enough-namestring under-truename
 													  top-truename)))))))
 	  nil))
+
+(defun max-key (lst predicate &key (key #'identity))
+  (let* ((max-obj (first lst))
+		 (max-val (funcall key max-obj)))
+	(dolist (cur (cdr lst) max-obj)
+	  (let ((cur-val (funcall key cur)))
+		(when (funcall predicate cur-val max-val)
+		  (setf max-obj cur
+				max-val cur-val))))))
